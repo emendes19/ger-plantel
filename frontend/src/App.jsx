@@ -9,6 +9,7 @@ import TacticsTab from './components/tabs/TacticsTab';
 import ScheduleTab from './components/tabs/ScheduleTab';
 import MedicalTab from './components/tabs/MedicalTab';
 
+import { DEFAULT_TACTICS } from './constants/tactics';
 import { getPlayers, createPlayer, updatePlayer, deletePlayer } from './services/api';
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [startingLineup, setStartingLineup] = useState([]);
+  const [tactics, setTactics] = useState(DEFAULT_TACTICS);
 
   const loadPlayers = async () => {
     try {
@@ -113,6 +115,8 @@ export default function App() {
             players={players} 
             startingLineup={startingLineup} 
             setStartingLineup={setStartingLineup} 
+            tactics={tactics}
+            setTactics={setTactics}
           />
         )}
 
