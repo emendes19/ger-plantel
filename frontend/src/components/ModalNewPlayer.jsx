@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { POSITIONS, POSITION_GROUPS } from '../constants/positions';
+import { NATIONALITY_SUGGESTIONS } from '../constants/nationalities';
 
 const INITIAL_FORM = {
   name: '',
@@ -10,7 +11,8 @@ const INITIAL_FORM = {
   age: '',
   injury: '',
   foot: 'Destro',
-  contract_end: '12/2027'
+  contract_end: '12/2027',
+  nationality: 'Brasil'
 };
 
 export default function ModalNewPlayer({ isOpen, onClose, onSubmit, players = [] }) {
@@ -41,7 +43,7 @@ export default function ModalNewPlayer({ isOpen, onClose, onSubmit, players = []
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-xl border border-slate-100">
+      <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-bold text-slate-900">Cadastrar Novo Atleta</h3>
           <button
@@ -166,16 +168,35 @@ export default function ModalNewPlayer({ isOpen, onClose, onSubmit, players = []
             </div>
           )}
 
-          <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1">Fim do Contrato</label>
-            <input
-              type="text"
-              required
-              value={formData.contract_end}
-              onChange={(e) => setFormData({ ...formData, contract_end: e.target.value })}
-              placeholder="Ex: 12/2027"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1">Nacionalidade</label>
+              <input
+                type="text"
+                list="new-player-nationalities"
+                maxLength={50}
+                value={formData.nationality}
+                onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
+                placeholder="Ex: Argentina"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500"
+              />
+              <datalist id="new-player-nationalities">
+                {NATIONALITY_SUGGESTIONS.map((n) => (
+                  <option key={n} value={n} />
+                ))}
+              </datalist>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1">Fim do Contrato</label>
+              <input
+                type="text"
+                required
+                value={formData.contract_end}
+                onChange={(e) => setFormData({ ...formData, contract_end: e.target.value })}
+                placeholder="Ex: 12/2027"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500"
+              />
+            </div>
           </div>
 
           {submitError && (

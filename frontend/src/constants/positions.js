@@ -30,6 +30,8 @@ const LEGACY_GROUPS = {
   atacante: 'ATAQUE',
 };
 
+const GROUP_ORDER = Object.keys(POSITION_GROUPS);
+
 export function getPosition(value) {
   if (!value) return null;
   const v = String(value).trim().toLowerCase();
@@ -48,4 +50,13 @@ export function getPositionGroup(value) {
   const found = getPosition(value);
   if (found) return found.group;
   return LEGACY_GROUPS[String(value || '').trim().toLowerCase()] || null;
+}
+
+// Ordem para ordenação: goleiros -> defesa -> meio -> ataque (posições genéricas ficam no fim do setor)
+export function getPositionOrder(value) {
+  const found = getPosition(value);
+  const group = getPositionGroup(value);
+  const groupIndex = group ? GROUP_ORDER.indexOf(group) : GROUP_ORDER.length;
+  const positionIndex = found ? POSITIONS.indexOf(found) : 99;
+  return groupIndex * 100 + positionIndex;
 }

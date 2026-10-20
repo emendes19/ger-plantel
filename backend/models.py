@@ -22,3 +22,4 @@ class Player(Base):
     injury = Column(String(255), nullable=True)
     foot = Column(String(20), nullable=False)
     contract_end = Column(String(20), nullable=False)
+    nationality = Column(String(50), nullable=True)

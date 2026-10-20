@@ -16,6 +16,7 @@ class PlayerBase(BaseModel):
     injury: Optional[str] = None
     foot: str
     contract_end: str
+    nationality: Optional[str] = None
 
 class PlayerCreate(PlayerBase):
     # Camisa válida: de 1 a 99 (só na criação, para não afetar atletas já cadastrados)

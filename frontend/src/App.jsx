@@ -45,7 +45,8 @@ export default function App() {
     ...formData,
     number: Number(formData.number),
     age: Number(formData.age),
-    injury: formData.status === 'AVAILABLE' ? null : formData.injury
+    injury: formData.status === 'AVAILABLE' ? null : formData.injury,
+    nationality: formData.nationality?.trim() || null
   });
 
   // Não captura o erro: o modal exibe a mensagem e mantém o formulário preenchido

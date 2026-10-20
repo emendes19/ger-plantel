@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, AlertTriangle, Pencil, CalendarClock } from 'lucide-react';
 import { POSITIONS, POSITION_GROUPS, getPosition, getPositionLabel, getPositionGroup } from '../constants/positions';
+import { NATIONALITY_SUGGESTIONS } from '../constants/nationalities';
 
 const STATUS_CONFIG = {
   AVAILABLE: { label: 'Disponível', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
@@ -43,14 +44,15 @@ const toFormData = (player) => ({
   injury: player.injury ?? '',
   foot: player.foot ?? 'Destro',
   contract_end: player.contract_end ?? '',
+  nationality: player.nationality ?? '',
 });
 
 const inputClass =
   'w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500';
 
-function InfoItem({ label, children }) {
+function InfoItem({ label, children, className = '' }) {
   return (
-    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+    <div className={`bg-slate-50 border border-slate-100 rounded-xl p-3 ${className}`}>
       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{label}</p>
       <div className="text-sm font-semibold text-slate-800">{children}</div>
     </div>
@@ -143,8 +145,9 @@ export default function ModalPlayerDetails({ player, players = [], onClose, onUp
               <InfoItem label="Setor">{groupKey ? POSITION_GROUPS[groupKey] : '—'}</InfoItem>
               <InfoItem label="Idade">{player.age} anos</InfoItem>
               <InfoItem label="Pé dominante">{player.foot}</InfoItem>
+              <InfoItem label="Nacionalidade">{player.nationality || 'Não informada'}</InfoItem>
               <InfoItem label="Número da camisa">#{player.number}</InfoItem>
-              <InfoItem label="Fim do contrato">{player.contract_end}</InfoItem>
+              <InfoItem label="Fim do contrato" className="col-span-2">{player.contract_end}</InfoItem>
             </div>
 
             {contractInfo && (
@@ -293,16 +296,35 @@ export default function ModalPlayerDetails({ player, players = [], onClose, onUp
               </div>
             )}
 
-            <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">Fim do Contrato</label>
-              <input
-                type="text"
-                required
-                value={formData.contract_end}
-                onChange={(e) => setFormData({ ...formData, contract_end: e.target.value })}
-                placeholder="Ex: 12/2027"
-                className={inputClass}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Nacionalidade</label>
+                <input
+                  type="text"
+                  list="details-nationalities"
+                  maxLength={50}
+                  value={formData.nationality}
+                  onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
+                  placeholder="Ex: Argentina"
+                  className={inputClass}
+                />
+                <datalist id="details-nationalities">
+                  {NATIONALITY_SUGGESTIONS.map((n) => (
+                    <option key={n} value={n} />
+                  ))}
+                </datalist>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Fim do Contrato</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.contract_end}
+                  onChange={(e) => setFormData({ ...formData, contract_end: e.target.value })}
+                  placeholder="Ex: 12/2027"
+                  className={inputClass}
+                />
+              </div>
             </div>
 
             {submitError && (
