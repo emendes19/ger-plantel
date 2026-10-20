@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from enum import Enum
 
@@ -18,7 +18,8 @@ class PlayerBase(BaseModel):
     contract_end: str
 
 class PlayerCreate(PlayerBase):
-    pass
+    # Camisa válida: de 1 a 99 (só na criação, para não afetar atletas já cadastrados)
+    number: int = Field(ge=1, le=99)
 
 class PlayerResponse(PlayerBase):
     id: int

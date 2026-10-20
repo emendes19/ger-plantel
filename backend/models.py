@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum
+from sqlalchemy import Column, Integer, String, Enum, UniqueConstraint
 from database import Base
 import enum
 
@@ -9,6 +9,9 @@ class PlayerStatus(str, enum.Enum):
 
 class Player(Base):
     __tablename__ = "players"
+    __table_args__ = (
+        UniqueConstraint("number", name="uq_players_number"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)

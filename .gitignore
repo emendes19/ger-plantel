@@ -1,0 +1,75 @@
+# ==========================================
+# Python & Back-end (FastAPI / venv)
+# ==========================================
+backend/venv/
+backend/env/
+backend/ENV/
+backend/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ==========================================
+# Node.js & Front-end (React / Vite / Tailwind)
+# ==========================================
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/build/
+*.local
+.npm
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+
+# ==========================================
+# Logs e Variáveis de Ambiente
+# ==========================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ==========================================
+# IDEs & Editores de Código
+# ==========================================
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# ==========================================
+# Banco de Dados & Outros
+# ==========================================
+*.sqlite3
+*.db
