@@ -1,5 +1,6 @@
+import datetime
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Literal, Optional
 from enum import Enum
 
 class PlayerStatusSchema(str, Enum):
@@ -23,6 +24,31 @@ class PlayerCreate(PlayerBase):
     number: int = Field(ge=1, le=99)
 
 class PlayerResponse(PlayerBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
+EventType = Literal["TRAINING", "REST", "MATCH"]
+CompetitionFormat = Literal["LEAGUE", "CUP", "FRIENDLY"]
+CompetitionScope = Literal["STATE", "NATIONAL", "CONTINENTAL"]
+
+class EventBase(BaseModel):
+    date: datetime.date
+    type: EventType
+    training_type: Optional[str] = None
+    competition_format: Optional[CompetitionFormat] = None
+    competition_scope: Optional[CompetitionScope] = None
+    competition_name: Optional[str] = None
+    opponent: Optional[str] = None
+    stage: Optional[str] = None
+    notes: Optional[str] = None
+
+class EventCreate(EventBase):
+    pass
+
+class EventResponse(EventBase):
     id: int
 
     class Config:

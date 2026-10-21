@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Enum, Date, UniqueConstraint
 from database import Base
 import enum
 
@@ -23,3 +23,21 @@ class Player(Base):
     foot = Column(String(20), nullable=False)
     contract_end = Column(String(20), nullable=False)
     nationality = Column(String(50), nullable=True)
+
+class Event(Base):
+    __tablename__ = "events"
+    __table_args__ = (
+        # Um evento por dia
+        UniqueConstraint("date", name="uq_events_date"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(Date, nullable=False)
+    type = Column(String(20), nullable=False)  # TRAINING, REST ou MATCH
+    training_type = Column(String(50), nullable=True)
+    competition_format = Column(String(20), nullable=True)  # LEAGUE, CUP ou FRIENDLY
+    competition_scope = Column(String(20), nullable=True)   # STATE, NATIONAL ou CONTINENTAL
+    competition_name = Column(String(100), nullable=True)
+    opponent = Column(String(100), nullable=True)
+    stage = Column(String(50), nullable=True)  # número da rodada (liga) ou nome da fase (copa)
+    notes = Column(String(255), nullable=True)
