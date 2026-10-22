@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import {
   Users, UserCheck, UserX, AlertTriangle, Search, Plus, Trash2,
-  ChevronRight, Hash, ArrowUp, ArrowDown, X
+  ChevronRight, Hash, ArrowUp, ArrowDown, X, Ban
 } from 'lucide-react';
 import {
   POSITIONS, POSITION_GROUPS, getPositionLabel, getPositionGroup
 } from '../../constants/positions';
+import { formatSuspension } from '../../constants/medical';
 import { SORT_OPTIONS, sortPlayers } from '../../utils/playerSort';
 
 const NO_NATIONALITY = '__NONE__';
@@ -325,6 +326,7 @@ export default function SquadTab({ players, onOpenModal, onDeletePlayer, onOpenD
         {sortedPlayers.map((player) => {
           const badge = statusConfig[player.status] || statusConfig.AVAILABLE;
           const isDuplicated = duplicatedNumbers.has(player.number);
+          const isSuspended = player.status === 'SUSPENDED';
 
           return (
             <div
@@ -385,12 +387,18 @@ export default function SquadTab({ players, onOpenModal, onDeletePlayer, onOpenD
                 </div>
               </div>
 
-              {(isDuplicated || player.injury) && (
+              {(isDuplicated || isSuspended || player.injury) && (
                 <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
                   {isDuplicated && (
                     <div className="px-2.5 py-1.5 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-700 flex items-center gap-1.5">
                       <Hash size={13} className="shrink-0 text-amber-500" />
                       <span>Camisa {player.number} repetida no elenco</span>
+                    </div>
+                  )}
+                  {isSuspended && (
+                    <div className="px-2.5 py-1.5 bg-amber-50 border border-amber-100 rounded-lg text-xs text-amber-700 flex items-center gap-1.5">
+                      <Ban size={13} className="shrink-0 text-amber-500" />
+                      <span>{formatSuspension(player)}</span>
                     </div>
                   )}
                   {player.injury && (

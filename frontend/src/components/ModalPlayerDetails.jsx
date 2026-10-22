@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, AlertTriangle, Pencil, CalendarClock } from 'lucide-react';
+import { X, AlertTriangle, Pencil, CalendarClock, Ban } from 'lucide-react';
 import { POSITIONS, POSITION_GROUPS, getPosition, getPositionLabel, getPositionGroup } from '../constants/positions';
 import { NATIONALITY_SUGGESTIONS } from '../constants/nationalities';
+import { SUSPENSION_REASON_SUGGESTIONS, formatSuspension } from '../constants/medical';
 
 const STATUS_CONFIG = {
   AVAILABLE: { label: 'Disponível', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
@@ -41,10 +42,11 @@ const toFormData = (player) => ({
   position: player.position ?? 'Zagueiro',
   status: player.status ?? 'AVAILABLE',
   age: player.age ?? '',
-  injury: player.injury ?? '',
   foot: player.foot ?? 'Destro',
   contract_end: player.contract_end ?? '',
   nationality: player.nationality ?? '',
+  suspension_reason: player.suspension_reason ?? '',
+  suspension_games: player.suspension_games ?? '',
 });
 
 const inputClass =
@@ -107,6 +109,25 @@ export default function ModalPlayerDetails({ player, players = [], onClose, onUp
     }
   };
 
+  const handleEndSuspension = async () => {
+    if (!confirm(`Encerrar a suspensão de ${player.name} e liberar o atleta?`)) return;
+
+    setSubmitError('');
+    setSaving(true);
+    try {
+      await onUpdate(player.id, {
+        ...toFormData(player),
+        status: 'AVAILABLE',
+        suspension_reason: '',
+        suspension_games: '',
+      });
+    } catch (err) {
+      setSubmitError(err?.message || 'Não foi possível encerrar a suspensão.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
@@ -157,10 +178,34 @@ export default function ModalPlayerDetails({ player, players = [], onClose, onUp
               </div>
             )}
 
+            {player.status === 'SUSPENDED' && (
+              <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-800 flex items-center justify-between gap-3">
+                <span className="flex items-center gap-2 min-w-0">
+                  <Ban size={15} className="shrink-0 text-amber-500" />
+                  <span>{formatSuspension(player)}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleEndSuspension}
+                  disabled={saving}
+                  className="shrink-0 bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg font-bold transition-all disabled:opacity-50"
+                >
+                  Encerrar suspensão
+                </button>
+              </div>
+            )}
+
             {player.injury && (
               <div className="mt-4 p-3 bg-rose-50 border border-rose-100 rounded-xl text-xs text-rose-700 flex items-start gap-2">
                 <AlertTriangle size={15} className="mt-0.5 shrink-0 text-rose-500" />
                 <span>{player.injury}</span>
+              </div>
+            )}
+
+            {submitError && (
+              <div className="mt-4 p-2.5 bg-rose-50 border border-rose-100 rounded-xl text-xs text-rose-700 flex items-start gap-2">
+                <AlertTriangle size={14} className="mt-0.5 shrink-0 text-rose-500" />
+                <span>{submitError}</span>
               </div>
             )}
 
@@ -283,16 +328,55 @@ export default function ModalPlayerDetails({ player, players = [], onClose, onUp
               </div>
             </div>
 
-            {formData.status !== 'AVAILABLE' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Descrição da Lesão / Suspensão</label>
-                <input
-                  type="text"
-                  value={formData.injury}
-                  onChange={(e) => setFormData({ ...formData, injury: e.target.value })}
-                  placeholder="Ex: Estiramento na coxa (Retorno: 10 dias)"
-                  className={inputClass}
-                />
+            {formData.status === 'INJURED' && (
+              <div className="p-2.5 bg-rose-50 border border-rose-100 rounded-xl text-xs text-rose-700 flex items-start gap-2">
+                <AlertTriangle size={14} className="mt-0.5 shrink-0 text-rose-500" />
+                <span>
+                  Os detalhes da lesão (tipo, local, datas e alta) são registrados na aba Departamento Médico.
+                </span>
+              </div>
+            )}
+
+            {formData.status === 'AVAILABLE' && player.status === 'INJURED' && (
+              <div className="p-2.5 bg-emerald-50 border border-emerald-100 rounded-xl text-xs text-emerald-700 flex items-start gap-2">
+                <AlertTriangle size={14} className="mt-0.5 shrink-0 text-emerald-500" />
+                <span>
+                  Ao salvar como Disponível, as lesões em aberto deste atleta recebem alta hoje.
+                </span>
+              </div>
+            )}
+
+            {formData.status === 'SUSPENDED' && (
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Motivo da suspensão</label>
+                  <input
+                    type="text"
+                    list="details-suspension-reasons"
+                    maxLength={100}
+                    value={formData.suspension_reason}
+                    onChange={(e) => setFormData({ ...formData, suspension_reason: e.target.value })}
+                    placeholder="Ex: Cartão vermelho"
+                    className={inputClass}
+                  />
+                  <datalist id="details-suspension-reasons">
+                    {SUSPENSION_REASON_SUGGESTIONS.map((r) => (
+                      <option key={r} value={r} />
+                    ))}
+                  </datalist>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Jogos</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    value={formData.suspension_games}
+                    onChange={(e) => setFormData({ ...formData, suspension_games: e.target.value })}
+                    placeholder="Ex: 2"
+                    className={inputClass}
+                  />
+                </div>
               </div>
             )}
 

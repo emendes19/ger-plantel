@@ -1,7 +1,7 @@
 const API_URL = 'http://localhost:8000';
 
 // Extrai uma mensagem legível do erro da API:
-// - 409 / 404 / 422 das regras do calendário: detail é texto
+// - 409 / 404 / 422 das regras do servidor: detail é texto
 // - 422 (validação do Pydantic): detail é uma lista de erros
 const extractErrorMessage = async (res, fallback) => {
   try {
@@ -86,5 +86,49 @@ export const deleteEvent = async (id) => {
     method: 'DELETE'
   });
   if (!res.ok) throw new Error(await extractErrorMessage(res, 'Erro ao remover evento'));
+  return res.json();
+};
+
+export const getInjuries = async () => {
+  const res = await fetch(`${API_URL}/injuries`);
+  if (!res.ok) throw new Error('Erro ao buscar lesões');
+  return res.json();
+};
+
+export const createInjury = async (injuryData) => {
+  const res = await fetch(`${API_URL}/injuries`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(injuryData)
+  });
+  if (!res.ok) throw new Error(await extractErrorMessage(res, 'Erro ao registrar lesão'));
+  return res.json();
+};
+
+export const updateInjury = async (id, injuryData) => {
+  const res = await fetch(`${API_URL}/injuries/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(injuryData)
+  });
+  if (!res.ok) throw new Error(await extractErrorMessage(res, 'Erro ao atualizar lesão'));
+  return res.json();
+};
+
+export const dischargeInjury = async (id, data) => {
+  const res = await fetch(`${API_URL}/injuries/${id}/discharge`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error(await extractErrorMessage(res, 'Erro ao dar alta'));
+  return res.json();
+};
+
+export const deleteInjury = async (id) => {
+  const res = await fetch(`${API_URL}/injuries/${id}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) throw new Error(await extractErrorMessage(res, 'Erro ao remover registro de lesão'));
   return res.json();
 };

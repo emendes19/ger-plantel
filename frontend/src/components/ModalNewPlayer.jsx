@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { POSITIONS, POSITION_GROUPS } from '../constants/positions';
 import { NATIONALITY_SUGGESTIONS } from '../constants/nationalities';
+import { SUSPENSION_REASON_SUGGESTIONS } from '../constants/medical';
 
 const INITIAL_FORM = {
   name: '',
@@ -9,7 +10,8 @@ const INITIAL_FORM = {
   position: 'Zagueiro',
   status: 'AVAILABLE',
   age: '',
-  injury: '',
+  suspension_reason: '',
+  suspension_games: '',
   foot: 'Destro',
   contract_end: '12/2027',
   nationality: 'Brasil'
@@ -155,16 +157,46 @@ export default function ModalNewPlayer({ isOpen, onClose, onSubmit, players = []
             </div>
           </div>
 
-          {formData.status !== 'AVAILABLE' && (
-            <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">Descrição da Lesão / Suspensão</label>
-              <input
-                type="text"
-                value={formData.injury}
-                onChange={(e) => setFormData({ ...formData, injury: e.target.value })}
-                placeholder="Ex: Estiramento na coxa (Retorno: 10 dias)"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500"
-              />
+          {formData.status === 'INJURED' && (
+            <div className="p-2.5 bg-rose-50 border border-rose-100 rounded-xl text-xs text-rose-700 flex items-start gap-2">
+              <AlertTriangle size={14} className="mt-0.5 shrink-0 text-rose-500" />
+              <span>
+                Os detalhes da lesão (tipo, local, datas e alta) são registrados na aba Departamento Médico.
+              </span>
+            </div>
+          )}
+
+          {formData.status === 'SUSPENDED' && (
+            <div className="grid grid-cols-3 gap-4">
+              <div className="col-span-2">
+                <label className="block text-xs font-bold text-slate-600 mb-1">Motivo da suspensão</label>
+                <input
+                  type="text"
+                  list="new-player-suspension-reasons"
+                  maxLength={100}
+                  value={formData.suspension_reason}
+                  onChange={(e) => setFormData({ ...formData, suspension_reason: e.target.value })}
+                  placeholder="Ex: Cartão vermelho"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500"
+                />
+                <datalist id="new-player-suspension-reasons">
+                  {SUSPENSION_REASON_SUGGESTIONS.map((r) => (
+                    <option key={r} value={r} />
+                  ))}
+                </datalist>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Jogos</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="99"
+                  value={formData.suspension_games}
+                  onChange={(e) => setFormData({ ...formData, suspension_games: e.target.value })}
+                  placeholder="Ex: 2"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500"
+                />
+              </div>
             </div>
           )}
 

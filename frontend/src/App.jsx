@@ -43,13 +43,20 @@ export default function App() {
     loadPlayers();
   }, []);
 
-  const buildPayload = (formData) => ({
-    ...formData,
-    number: Number(formData.number),
-    age: Number(formData.age),
-    injury: formData.status === 'AVAILABLE' ? null : formData.injury,
-    nationality: formData.nationality?.trim() || null
-  });
+  // A lesão é registrada na aba Departamento Médico; a suspensão (motivo e jogos) é enviada aqui
+  const buildPayload = (formData) => {
+    const isSuspended = formData.status === 'SUSPENDED';
+    const hasGames = formData.suspension_games !== '' && formData.suspension_games != null;
+
+    return {
+      ...formData,
+      number: Number(formData.number),
+      age: Number(formData.age),
+      nationality: formData.nationality?.trim() || null,
+      suspension_reason: isSuspended ? formData.suspension_reason?.trim() || null : null,
+      suspension_games: isSuspended && hasGames ? Number(formData.suspension_games) : null
+    };
+  };
 
   // Não captura o erro: o modal exibe a mensagem e mantém o formulário preenchido
   const handleCreatePlayer = async (formData) => {
@@ -122,7 +129,7 @@ export default function App() {
 
         {activeTab === 'schedule' && <ScheduleTab />}
 
-        {activeTab === 'medical' && <MedicalTab players={players} />}
+        {activeTab === 'medical' && <MedicalTab players={players} onRefreshPlayers={loadPlayers} />}
       </main>
 
       <ModalNewPlayer 

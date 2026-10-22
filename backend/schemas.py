@@ -18,10 +18,13 @@ class PlayerBase(BaseModel):
     foot: str
     contract_end: str
     nationality: Optional[str] = None
+    suspension_reason: Optional[str] = None
+    suspension_games: Optional[int] = None
 
 class PlayerCreate(PlayerBase):
     # Camisa válida: de 1 a 99 (só na criação, para não afetar atletas já cadastrados)
     number: int = Field(ge=1, le=99)
+    suspension_games: Optional[int] = Field(default=None, ge=1, le=99)
 
 class PlayerResponse(PlayerBase):
     id: int
@@ -50,6 +53,35 @@ class EventCreate(EventBase):
 
 class EventResponse(EventBase):
     id: int
+
+    class Config:
+        from_attributes = True
+
+
+class InjuryBase(BaseModel):
+    injury_type: str
+    body_part: str
+    body_side: Optional[str] = None
+    injury_date: datetime.date
+    match_event_id: Optional[int] = None
+    expected_return_training: Optional[datetime.date] = None
+    expected_return_play: Optional[datetime.date] = None
+    notes: Optional[str] = None
+
+class InjuryCreate(InjuryBase):
+    player_id: int
+
+class InjuryUpdate(InjuryBase):
+    pass
+
+class InjuryDischarge(BaseModel):
+    discharge_date: Optional[datetime.date] = None  # vazio = hoje
+
+class InjuryResponse(InjuryBase):
+    id: int
+    player_id: int
+    discharge_date: Optional[datetime.date] = None
+    match: Optional[EventResponse] = None
 
     class Config:
         from_attributes = True
