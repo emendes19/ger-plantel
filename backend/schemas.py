@@ -35,7 +35,8 @@ class PlayerResponse(PlayerBase):
 
 EventType = Literal["TRAINING", "REST", "MATCH"]
 CompetitionFormat = Literal["LEAGUE", "CUP", "FRIENDLY"]
-CompetitionScope = Literal["STATE", "NATIONAL", "CONTINENTAL"]
+# Adicionado "REGIONAL" para aceitar Campeonatos Estaduais/Regionais
+CompetitionScope = Literal["STATE", "REGIONAL", "NATIONAL", "CONTINENTAL"]
 
 class EventBase(BaseModel):
     date: datetime.date
@@ -59,6 +60,7 @@ class EventResponse(EventBase):
 
 
 class InjuryBase(BaseModel):
+    player_id: int
     injury_type: str
     body_part: str
     body_side: Optional[str] = None
@@ -66,21 +68,22 @@ class InjuryBase(BaseModel):
     match_event_id: Optional[int] = None
     expected_return_training: Optional[datetime.date] = None
     expected_return_play: Optional[datetime.date] = None
+    discharge_date: Optional[datetime.date] = None
     notes: Optional[str] = None
 
 class InjuryCreate(InjuryBase):
-    player_id: int
+    # Preenchida ao registrar uma lesão anterior (já encerrada). Vazia = lesão em andamento.
+    discharge_date: Optional[datetime.date] = None
 
 class InjuryUpdate(InjuryBase):
-    pass
+    # Só tem efeito em lesão encerrada (corrige a data da alta) ou ao encerrar uma lesão aberta.
+    discharge_date: Optional[datetime.date] = None
 
 class InjuryDischarge(BaseModel):
     discharge_date: Optional[datetime.date] = None  # vazio = hoje
 
 class InjuryResponse(InjuryBase):
     id: int
-    player_id: int
-    discharge_date: Optional[datetime.date] = None
     match: Optional[EventResponse] = None
 
     class Config:

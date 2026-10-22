@@ -4,6 +4,7 @@ import {
   INJURY_TYPES,
   BODY_PARTS,
   BODY_SIDES,
+  MATCH_LOOKBACK_DAYS,
   getTodayKey,
   formatMatchLabel,
 } from '../constants/medical';
@@ -20,6 +21,7 @@ const toForm = (injury, presetPlayerId, presetNotes) => ({
   match_event_id: injury?.match_event_id ? String(injury.match_event_id) : '',
   expected_return_training: injury?.expected_return_training ?? '',
   expected_return_play: injury?.expected_return_play ?? '',
+  discharge_date: injury?.discharge_date ?? '',
   notes: injury?.notes ?? presetNotes ?? '',
 });
 
@@ -28,6 +30,7 @@ export default function ModalInjury({
   players,
   presetPlayerId,
   presetNotes,
+  historical = false,
   matches,
   onClose,
   onSave,
@@ -35,6 +38,8 @@ export default function ModalInjury({
 }) {
   const isEditing = Boolean(injury);
   const lockedPlayer = isEditing || Boolean(presetPlayerId);
+  // Lesão anterior (nova) ou registro já encerrado: pede a data da alta
+  const showDischarge = historical || Boolean(injury?.discharge_date);
 
   const [form, setForm] = useState(() => toForm(injury, presetPlayerId, presetNotes));
   const [submitError, setSubmitError] = useState('');
@@ -42,6 +47,7 @@ export default function ModalInjury({
 
   const update = (changes) => setForm((prev) => ({ ...prev, ...changes }));
   const today = getTodayKey();
+  const lookbackYears = Math.round(MATCH_LOOKBACK_DAYS / 365);
 
   const selectedPlayer = players.find((p) => p.id === Number(form.player_id));
   const sortedPlayers = useMemo(
@@ -83,6 +89,11 @@ export default function ModalInjury({
     ) {
       return 'A liberação para jogar não pode ser anterior ao retorno aos treinos.';
     }
+    if (showDischarge) {
+      if (!form.discharge_date) return 'Informe a data da alta.';
+      if (form.discharge_date < form.injury_date) return 'A alta não pode ser anterior à data da lesão.';
+      if (form.discharge_date > today) return 'A data da alta não pode ser futura.';
+    }
     return '';
   };
 
@@ -105,6 +116,7 @@ export default function ModalInjury({
       notes: form.notes.trim() || null,
     };
     if (!isEditing) payload.player_id = Number(form.player_id);
+    if (showDischarge) payload.discharge_date = form.discharge_date;
 
     setSubmitError('');
     setSaving(true);
@@ -133,10 +145,17 @@ export default function ModalInjury({
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-bold text-slate-900">
-            {isEditing ? 'Editar lesão' : 'Registrar lesão'}
-          </h3>
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900">
+              {isEditing ? 'Editar lesão' : historical ? 'Registrar lesão anterior' : 'Registrar lesão'}
+            </h3>
+            {historical && !isEditing && (
+              <p className="text-xs text-slate-500 mt-0.5">
+                Para lesões que já terminaram. O status atual do atleta não é alterado.
+              </p>
+            )}
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -249,13 +268,15 @@ export default function ModalInjury({
               ))}
             </select>
             <p className="text-[10px] text-slate-400 mt-1">
-              Mostra os jogos cadastrados no calendário nos últimos 180 dias.
+              Mostra os jogos cadastrados no calendário nos últimos {lookbackYears} anos.
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">Retorno aos treinos (previsão)</label>
+              <label className="block text-xs font-bold text-slate-600 mb-1">
+                {showDischarge ? 'Retorno aos treinos' : 'Retorno aos treinos (previsão)'}
+              </label>
               <input
                 type="date"
                 min={form.injury_date || undefined}
@@ -265,7 +286,9 @@ export default function ModalInjury({
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">Liberação para jogar (previsão)</label>
+              <label className="block text-xs font-bold text-slate-600 mb-1">
+                {showDischarge ? 'Liberação para jogar' : 'Liberação para jogar (previsão)'}
+              </label>
               <input
                 type="date"
                 min={form.expected_return_training || form.injury_date || undefined}
@@ -275,6 +298,21 @@ export default function ModalInjury({
               />
             </div>
           </div>
+
+          {showDischarge && (
+            <div>
+              <label className="block text-xs font-bold text-slate-600 mb-1">Data da alta</label>
+              <input
+                type="date"
+                required
+                min={form.injury_date || undefined}
+                max={today}
+                value={form.discharge_date}
+                onChange={(e) => update({ discharge_date: e.target.value })}
+                className={inputClass}
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-bold text-slate-600 mb-1">Observações (opcional)</label>

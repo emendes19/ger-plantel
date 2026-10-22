@@ -1,17 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Activity, Plus, Pencil, CheckCircle2, ChevronDown, ChevronUp, X, AlertTriangle, Loader2,
+  Activity, Plus, Pencil, CheckCircle2, X, AlertTriangle, Loader2,
 } from 'lucide-react';
 import ModalInjury from '../ModalInjury';
+import InjuryHistory from '../InjuryHistory';
 import { toDateKey } from '../../constants/schedule';
 import {
   INJURY_PHASES,
+  MATCH_LOOKBACK_DAYS,
   getInjuryPhase,
   getTodayKey,
   formatDate,
   describeDays,
   daysFromToday,
-  daysBetween,
   formatMatchLabel,
 } from '../../constants/medical';
 import {
@@ -193,9 +194,8 @@ export default function MedicalTab({ players, onRefreshPlayers }) {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const [modal, setModal] = useState(null); // { injury, playerId, notes }
+  const [modal, setModal] = useState(null); // { injury, playerId, notes, historical }
   const [dischargeTarget, setDischargeTarget] = useState(null);
-  const [showHistory, setShowHistory] = useState(false);
 
   const loadInjuries = useCallback(async () => {
     try {
@@ -208,12 +208,12 @@ export default function MedicalTab({ players, onRefreshPlayers }) {
     }
   }, []);
 
-  // Jogos do calendário dos últimos 180 dias, para vincular a lesão a uma partida
+  // Jogos do calendário dos últimos 2 anos, para vincular a lesão a uma partida
   const loadMatches = useCallback(async () => {
     try {
       const now = new Date();
       const start = new Date(now);
-      start.setDate(start.getDate() - 180);
+      start.setDate(start.getDate() - MATCH_LOOKBACK_DAYS);
       const toKey = (d) => toDateKey(d.getFullYear(), d.getMonth(), d.getDate());
       const events = await getEvents(toKey(start), toKey(now));
       setMatches(events.filter((e) => e.type === 'MATCH'));
@@ -235,14 +235,6 @@ export default function MedicalTab({ players, onRefreshPlayers }) {
       .filter((i) => !i.discharge_date && playersById[i.player_id])
       .sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
   }, [injuries, playersById]);
-
-  const history = useMemo(
-    () =>
-      injuries
-        .filter((i) => i.discharge_date && playersById[i.player_id])
-        .sort((a, b) => b.discharge_date.localeCompare(a.discharge_date)),
-    [injuries, playersById]
-  );
 
   // Atletas marcados como lesionados no Plantel, mas sem registro detalhado
   const unregistered = useMemo(() => {
@@ -282,6 +274,11 @@ export default function MedicalTab({ players, onRefreshPlayers }) {
     await refreshAll();
   };
 
+  const openNewInjury = () => setModal({ injury: null, playerId: null, notes: '', historical: false });
+  const openHistoricalInjury = () => setModal({ injury: null, playerId: null, notes: '', historical: true });
+  const openEditInjury = (injury) =>
+    setModal({ injury, playerId: injury.player_id, notes: '', historical: false });
+
   const hasAnything = activeInjuries.length > 0 || unregistered.length > 0;
 
   return (
@@ -293,7 +290,7 @@ export default function MedicalTab({ players, onRefreshPlayers }) {
         </div>
         <button
           type="button"
-          onClick={() => setModal({ injury: null, playerId: null, notes: '' })}
+          onClick={openNewInjury}
           className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-sm transition-all"
         >
           <Plus size={16} /> Registrar lesão
@@ -345,7 +342,7 @@ export default function MedicalTab({ players, onRefreshPlayers }) {
               key={injury.id}
               injury={injury}
               player={playersById[injury.player_id]}
-              onEdit={(item) => setModal({ injury: item, playerId: item.player_id, notes: '' })}
+              onEdit={openEditInjury}
               onDischarge={setDischargeTarget}
             />
           ))}
@@ -369,7 +366,7 @@ export default function MedicalTab({ players, onRefreshPlayers }) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setModal({ injury: null, playerId: player.id, notes: player.injury || '' })}
+                  onClick={() => setModal({ injury: null, playerId: player.id, notes: player.injury || '', historical: false })}
                   className="shrink-0 bg-rose-500 hover:bg-rose-600 text-white px-3 py-2 rounded-xl text-xs font-bold transition-all"
                 >
                   Registrar lesão
@@ -380,58 +377,21 @@ export default function MedicalTab({ players, onRefreshPlayers }) {
         </div>
       )}
 
-      {history.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-          <button
-            type="button"
-            onClick={() => setShowHistory((v) => !v)}
-            className="w-full flex items-center justify-between text-sm font-bold text-slate-700"
-          >
-            <span>Histórico de lesões ({history.length})</span>
-            {showHistory ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-          </button>
-
-          {showHistory && (
-            <div className="mt-4 divide-y divide-slate-100 max-h-96 overflow-y-auto">
-              {history.map((injury) => {
-                const player = playersById[injury.player_id];
-                const days = daysBetween(injury.injury_date, injury.discharge_date);
-                return (
-                  <div key={injury.id} className="py-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                    <div className="min-w-0">
-                      <p className="font-bold text-slate-800 truncate">#{player.number} {player.name}</p>
-                      <p className="text-slate-400 truncate">
-                        {injury.injury_type} — {injury.body_part}
-                        {injury.body_side ? ` (${injury.body_side.toLowerCase()})` : ''}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Lesão</p>
-                      <p className="font-semibold text-slate-700">{formatDate(injury.injury_date)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Alta</p>
-                      <p className="font-semibold text-slate-700">{formatDate(injury.discharge_date)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tempo afastado</p>
-                      <p className="font-semibold text-slate-700">{days} {days === 1 ? 'dia' : 'dias'}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+      <InjuryHistory
+        injuries={injuries}
+        players={players}
+        onRegister={openHistoricalInjury}
+        onEdit={openEditInjury}
+      />
 
       {modal && (
         <ModalInjury
-          key={modal.injury ? `edit-${modal.injury.id}` : `new-${modal.playerId ?? 'any'}`}
+          key={modal.injury ? `edit-${modal.injury.id}` : `new-${modal.historical ? 'past' : modal.playerId ?? 'any'}`}
           injury={modal.injury}
           players={players}
           presetPlayerId={modal.playerId}
           presetNotes={modal.notes}
+          historical={modal.historical}
           matches={matches}
           onClose={() => setModal(null)}
           onSave={handleSave}

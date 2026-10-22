@@ -73,6 +73,7 @@ def close_active_injuries(db: Session, player_id: int):
         injury.discharge_date = today
 
 def sync_player_after_injury_change(db: Session, player: Optional[models.Player]):
+    """Usar só quando uma lesão ATIVA foi encerrada ou removida."""
     if player is None:
         return
     if not active_injuries_of(db, player.id) and status_of(player) == "INJURED":
@@ -292,6 +293,7 @@ def clean_injury(db: Session, data: dict) -> dict:
     injury_date = data["injury_date"]
     training = data.get("expected_return_training")
     play = data.get("expected_return_play")
+    discharge = data.get("discharge_date")
 
     if injury_date > date.today():
         raise invalid("A data da lesão não pode ser futura.")
@@ -301,6 +303,11 @@ def clean_injury(db: Session, data: dict) -> dict:
         raise invalid("A liberação para jogar não pode ser anterior à data da lesão.")
     if training and play and play < training:
         raise invalid("A liberação para jogar não pode ser anterior ao retorno aos treinos.")
+    if discharge:
+        if discharge < injury_date:
+            raise invalid("A alta não pode ser anterior à data da lesão.")
+        if discharge > date.today():
+            raise invalid("A data da alta não pode ser futura.")
 
     match_id = data.get("match_event_id")
     if match_id is not None:
@@ -335,7 +342,9 @@ def create_injury(injury: schemas.InjuryCreate, db: Session = Depends(get_db)):
     db_injury = models.Injury(**data)
     db.add(db_injury)
 
-    if status_of(player) == "AVAILABLE":
+    # Lesão em andamento: o atleta passa a Lesionado.
+    # Lesão anterior (já com alta): entra só no histórico, sem mudar o status atual.
+    if not data.get("discharge_date") and status_of(player) == "AVAILABLE":
         player.status = models.PlayerStatus.INJURED
     refresh_player_summary(db, player)
 
@@ -350,15 +359,25 @@ def update_injury(injury_id: int, injury: schemas.InjuryUpdate, db: Session = De
         raise HTTPException(status_code=404, detail="Lesão não encontrada")
 
     data = clean_injury(db, injury.model_dump())
-    if db_injury.discharge_date and db_injury.discharge_date < data["injury_date"]:
+    new_discharge = data.pop("discharge_date", None)
+    was_active = db_injury.discharge_date is None
+
+    # Lesão encerrada nunca é reaberta por edição: sem data nova, mantém a alta atual
+    effective_discharge = new_discharge or db_injury.discharge_date
+    if effective_discharge and effective_discharge < data["injury_date"]:
         raise invalid("A data da lesão não pode ser posterior à data da alta.")
 
     for field, value in data.items():
         setattr(db_injury, field, value)
+    if new_discharge:
+        db_injury.discharge_date = new_discharge
 
     player = db.query(models.Player).filter(models.Player.id == db_injury.player_id).first()
     if player:
-        refresh_player_summary(db, player)
+        if was_active and new_discharge:
+            sync_player_after_injury_change(db, player)
+        else:
+            refresh_player_summary(db, player)
 
     db.commit()
     db.refresh(db_injury)
@@ -397,9 +416,15 @@ def delete_injury(injury_id: int, db: Session = Depends(get_db)):
     if not db_injury:
         raise HTTPException(status_code=404, detail="Lesão não encontrada")
 
+    was_active = db_injury.discharge_date is None
     player = db.query(models.Player).filter(models.Player.id == db_injury.player_id).first()
     db.delete(db_injury)
-    sync_player_after_injury_change(db, player)
+
+    if player:
+        if was_active:
+            sync_player_after_injury_change(db, player)
+        else:
+            refresh_player_summary(db, player)
 
     db.commit()
     return {"message": "Registro de lesão removido com sucesso"}

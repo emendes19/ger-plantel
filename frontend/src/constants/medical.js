@@ -45,6 +45,9 @@ export const INJURY_PHASES = {
   READY: { label: 'Apto a jogar', badge: 'bg-emerald-100 text-emerald-800' },
 };
 
+// Quantos dias para trás os jogos do calendário aparecem ao vincular uma lesão a uma partida
+export const MATCH_LOOKBACK_DAYS = 730;
+
 export const getTodayKey = () => {
   const now = new Date();
   return toDateKey(now.getFullYear(), now.getMonth(), now.getDate());
@@ -69,6 +72,8 @@ export const daysFromToday = (dateKey) => {
 // Dias entre duas datas "AAAA-MM-DD"
 export const daysBetween = (startKey, endKey) =>
   Math.round((new Date(endKey) - new Date(startKey)) / 86400000);
+
+export const formatDaysCount = (days) => `${days} ${days === 1 ? 'dia' : 'dias'}`;
 
 export const describeDays = (dateKey) => {
   const days = daysFromToday(dateKey);
