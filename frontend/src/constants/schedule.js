@@ -36,6 +36,7 @@ export const TRAINING_TYPES = [
   'Bola parada',
   'Finalização',
   'Coletivo',
+  'Campo reduzido',
   'Academia',
   'Recuperação',
 ];
